@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { app } from './scripts/firebaseConfig';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'; // Importar o auth do Firebase
 import TabelaProdutos from './componentes/TabelaProdutos';
 
 function App() {
   const [produtos, setProdutos] = useState([]);
-  const [showForm, setShowForm] = useState(false); // Controla a exibição do formulário
-  const [editandoProduto, setEditandoProduto] = useState(null); // Estado para identificar se estamos editando
+  const [showForm, setShowForm] = useState(false);
+  const [editandoProduto, setEditandoProduto] = useState(null);
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
     categoria: '',
@@ -15,8 +16,11 @@ function App() {
     quantidade: '',
     imagem: ''
   });
-  const [imagem, setImagem] = useState(null); // Estado para armazenar o arquivo de imagem
-  const [uploading, setUploading] = useState(false); // Estado para controlar o upload
+  const [imagem, setImagem] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [email, setEmail] = useState(''); // Estado para o email
+  const [senha, setSenha] = useState(''); // Estado para a senha
+  const [usuarioAutenticado, setUsuarioAutenticado] = useState(false); // Estado para controle de autenticação
 
   const fetchProdutos = async () => {
     const db = getFirestore(app);
@@ -39,7 +43,7 @@ function App() {
   };
 
   const handleFileChange = (e) => {
-    setImagem(e.target.files[0]); // Armazena o arquivo de imagem selecionado
+    setImagem(e.target.files[0]);
   };
 
   const uploadImagem = async () => {
@@ -72,19 +76,17 @@ function App() {
     try {
       let imageUrl = novoProduto.imagem;
       if (imagem) {
-        imageUrl = await uploadImagem(); // Upload da imagem se uma nova imagem for selecionada
+        imageUrl = await uploadImagem();
       }
 
       const db = getFirestore(app);
       if (editandoProduto) {
-        // Atualiza o produto existente
         await updateDoc(doc(db, 'produtos', editandoProduto.id), {
           ...novoProduto,
           imagem: imageUrl
         });
-        setEditandoProduto(null); // Resetando o estado de edição
+        setEditandoProduto(null);
       } else {
-        // Adiciona novo produto
         await addDoc(collection(db, 'produtos'), {
           ...novoProduto,
           imagem: imageUrl
@@ -103,7 +105,7 @@ function App() {
   };
 
   const handleEditProduto = (produto) => {
-    setEditandoProduto(produto); // Define o produto a ser editado
+    setEditandoProduto(produto);
     setNovoProduto({
       nome: produto.nome,
       categoria: produto.categoria,
@@ -111,91 +113,135 @@ function App() {
       quantidade: produto.quantidade,
       imagem: produto.imagem
     });
-    setShowForm(true); // Mostra o formulário para edição
+    setShowForm(true);
+  };
+
+  // Função para lidar com o login
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const auth = getAuth(app);
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+      setUsuarioAutenticado(true); // Define o usuário como autenticado
+      setEmail(''); // Limpa o campo de e-mail
+      setSenha(''); // Limpa o campo de senha
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+    }
   };
 
   useEffect(() => {
-    fetchProdutos();
-  }, []);
+    if (usuarioAutenticado) {
+      fetchProdutos();
+    }
+  }, [usuarioAutenticado]);
 
   return (
     <div className="container mt-4">
       <h1>Gerenciamento de Produtos</h1>
-      
-      <button
-        className="btn btn-success mb-3"
-        onClick={() => {
-          setShowForm(!showForm);
-          setEditandoProduto(null); // Resetando o estado de edição ao abrir o formulário vazio
-          setNovoProduto({ nome: '', categoria: '', preco: '', quantidade: '', imagem: '' });
-        }}
-      >
-        {showForm ? 'Fechar Formulário' : 'Cadastrar Produto'}
-      </button>
 
-      {showForm && (
-        <form onSubmit={handleSaveProduto}>
+      {!usuarioAutenticado ? (
+        <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label>Nome do Produto</label>
+            <label>Email</label>
             <input
-              type="text"
+              type="email"
               className="form-control"
-              name="nome"
-              value={novoProduto.nome}
-              onChange={handleInputChange}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
           <div className="form-group">
-            <label>Categoria</label>
+            <label>Senha</label>
             <input
-              type="text"
+              type="password"
               className="form-control"
-              name="categoria"
-              value={novoProduto.categoria}
-              onChange={handleInputChange}
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
               required
             />
           </div>
-          <div className="form-group">
-            <label>Preço</label>
-            <input
-              type="number"
-              className="form-control"
-              name="preco"
-              value={novoProduto.preco}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Quantidade Disponível</label>
-            <input
-              type="number"
-              className="form-control"
-              name="quantidade"
-              value={novoProduto.quantidade}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Imagem do Produto</label>
-            <input
-              type="file"
-              className="form-control"
-              onChange={handleFileChange}
-            />
-          </div>
-
-          <button type="submit" className="btn btn-primary mt-3" disabled={uploading}>
-            {uploading ? 'Salvando...' : editandoProduto ? 'Editar Produto' : 'Salvar'}
-          </button>
+          <button type="submit" className="btn btn-primary mt-3">Login</button>
         </form>
-      )}
+      ) : (
+        <>
+          <button
+            className="btn btn-success mb-3"
+            onClick={() => {
+              setShowForm(!showForm);
+              setEditandoProduto(null);
+              setNovoProduto({ nome: '', categoria: '', preco: '', quantidade: '', imagem: '' });
+            }}
+          >
+            {showForm ? 'Fechar Formulário' : 'Cadastrar Produto'}
+          </button>
 
-      {!showForm && (
-        <TabelaProdutos produtos={produtos} onRemoveProduto={handleRemoveProduto} onEditProduto={handleEditProduto} />
+          {showForm && (
+            <form onSubmit={handleSaveProduto}>
+              <div className="form-group">
+                <label>Nome do Produto</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="nome"
+                  value={novoProduto.nome}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Categoria</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="categoria"
+                  value={novoProduto.categoria}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Preço</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  name="preco"
+                  value={novoProduto.preco}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Quantidade Disponível</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  name="quantidade"
+                  value={novoProduto.quantidade}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Imagem do Produto</label>
+                <input
+                  type="file"
+                  className="form-control"
+                  onChange={handleFileChange}
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary mt-3" disabled={uploading}>
+                {uploading ? 'Salvando...' : editandoProduto ? 'Editar Produto' : 'Salvar'}
+              </button>
+            </form>
+          )}
+
+          {!showForm && (
+            <TabelaProdutos produtos={produtos} onRemoveProduto={handleRemoveProduto} onEditProduto={handleEditProduto} />
+          )}
+        </>
       )}
     </div>
   );
