@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { app } from './scripts/firebaseConfig';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'; // Importar o auth do Firebase
+import { app, auth } from './scripts/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 import TabelaProdutos from './componentes/TabelaProdutos';
+import Login from './componentes/Login'; // Importa o componente de login
 
 function App() {
   const [produtos, setProdutos] = useState([]);
+  const [usuarioAutenticado, setUsuarioAutenticado] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editandoProduto, setEditandoProduto] = useState(null);
   const [novoProduto, setNovoProduto] = useState({
@@ -18,9 +20,20 @@ function App() {
   });
   const [imagem, setImagem] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [email, setEmail] = useState(''); // Estado para o email
-  const [senha, setSenha] = useState(''); // Estado para a senha
-  const [usuarioAutenticado, setUsuarioAutenticado] = useState(false); // Estado para controle de autenticação
+
+  useEffect(() => {
+    // Verifica o estado da autenticação ao carregar o app
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+            setUsuarioAutenticado(true); // O usuário está logado
+            fetchProdutos(); // Carrega produtos quando o usuário está autenticado
+        } else {
+            setUsuarioAutenticado(false); // O usuário não está logado
+        }
+    });
+
+    return () => unsubscribe(); // Limpa o ouvinte ao desmontar
+}, []);
 
   const fetchProdutos = async () => {
     const db = getFirestore(app);
@@ -116,54 +129,12 @@ function App() {
     setShowForm(true);
   };
 
-  // Função para lidar com o login
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const auth = getAuth(app);
-    try {
-      await signInWithEmailAndPassword(auth, email, senha);
-      setUsuarioAutenticado(true); // Define o usuário como autenticado
-      setEmail(''); // Limpa o campo de e-mail
-      setSenha(''); // Limpa o campo de senha
-    } catch (error) {
-      console.error('Erro ao fazer login:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (usuarioAutenticado) {
-      fetchProdutos();
-    }
-  }, [usuarioAutenticado]);
-
   return (
     <div className="container mt-4">
       <h1>Gerenciamento de Produtos</h1>
 
       {!usuarioAutenticado ? (
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              className="form-control"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Senha</label>
-            <input
-              type="password"
-              className="form-control"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit" className="btn btn-primary mt-3">Login</button>
-        </form>
+        <Login onLoginSuccess={() => setUsuarioAutenticado(true)} />
       ) : (
         <>
           <button
