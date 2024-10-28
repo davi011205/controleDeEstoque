@@ -12,16 +12,20 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 
   --Corfundo: #d0c6e6;
   --corTexto: black;
 }
 
   .container {
+    border: 5px solid red;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    height: 100%;
+    width: 100%;
 
     .principalLogin {
       width: 50vw;
@@ -70,8 +74,22 @@
             input {
               width: 100%;
               background: none;
+              outline: none;
               border-radius: 4px;
+              padding: 10px;
+              border: 1px solid var(--Corfundo);
+              color: var(--corTexto);
+
+              &:focus {
+                border-color:#5f67ff;
+              }
+              
             }
+          }
+
+          .buttonLogin button{
+            width: 50%;
+            background-color:var(--Corfundo);
           }
         }
       }
@@ -83,8 +101,133 @@
 
       }
     }
+
+    .principalTabela {
+      /* border: 1px solid red; */
+      width: 100%;
+      height: 100vh;
+
+      header {
+        /* border: 2px solid red; */
+        display: flex;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 15px;
+        
+        .cadastroProduto {
+          display: flex;
+          justify-content: center;
+          /* border: 2px solid orange; */
+          width: 90%;
+        }
+
+        .btnLogout {
+          /* display: flex;
+          justify-content: end; */
+          width: 10%;
+          /* border: 2px solid white; */
+        }
+      }
+
+      .formulario {
+        width: 100%;
+      }
+      
+      .table {
+        border: 1px solid red;
+        width: 100%;
+        text-align: center;
+       
+        table {
+          width: 80%;
+          margin: 0 auto;
+          border-collapse:collapse;
+          
+          th, td {
+            border: 1px solid black;
+          }
+        }
+      }
+  }
+}
+
+  .overLayCadastroProduto {
+    background-color: rgba(0, 0, 0, 0.625);
+    backdrop-filter: blur(4px);
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+
+    .cadastroProduto {
+      border-radius: 10px;
+      padding: 50px;
+      background-color: var(--Corfundo);
+      width: 40%;
+
+      form {
+        width: 100%;
+        /* border: 2px solid orange; */
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+
+        div {
+          /* border: 2px solid red; */
+          width: 30%;
+          display: flex;
+          flex-wrap: wrap;
+          
+
+          label {
+            width: 100%;
+          }
+
+          input {
+            width: 100%;
+            background: none;
+            outline: none;
+            border-radius: 4px;
+            padding: 10px;
+            border: 1px solid #5a62ff;
+            color: var(--corTexto);
+
+            &:focus {
+              border-color:#000dff;
+            }
+            
+          }
+        }
+      }
+    }
   }
 
+
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
 
 
 body {
@@ -111,13 +254,8 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
+
+
 
 @media (prefers-color-scheme: light) {
   :root {
